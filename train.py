@@ -8,25 +8,24 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import numpy as np
-from models import API_Net 
+from models import API_Net
+from torchvision import datasets, models, transforms
 from datasets import RandomDataset, BatchDataset, BalancedBatchSampler
 from utils import accuracy, AverageMeter, save_checkpoint
-
-
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--exp_name', default=None, type=str,
                     help='name of experiment')
-parser.add_argument('--data', metavar='DIR',default='',
+parser.add_argument('--data', metavar='DIR', default='',
                     help='path to dataset')
-parser.add_argument('-j', '--workers', default=10, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=100, type=int,
+parser.add_argument('-b', '--batch-size', default=32, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                     metavar='LR', help='initial learning rate')
@@ -44,14 +43,15 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                     help='use pre-trained model')
-parser.add_argument('--n_classes', default=30, type=int,
+parser.add_argument('--n_classes', default=6, type=int,
                     help='the number of classes')
-parser.add_argument('--n_samples', default=4, type=int,
+parser.add_argument('--n_samples', default=1, type=int,
                     help='the number of samples per class')
 
 
 best_prec1 = 0
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def main():
     global args, best_prec1
@@ -59,7 +59,6 @@ def main():
     torch.manual_seed(2)
     torch.cuda.manual_seed_all(2)
     np.random.seed(2)
-
 
     # create model
     model = API_Net()
@@ -78,19 +77,20 @@ def main():
                                 weight_decay=args.weight_decay)
     if args.resume:
         if os.path.isfile(args.resume):
-            print 'loading checkpoint {}'.format(args.resume)
+            print('loading checkpoint {}'.format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             best_prec1 = checkpoint['best_prec1']
             model.load_state_dict(checkpoint['state_dict'])
             optimizer_conv.load_state_dict(checkpoint['optimizer_conv'])
             optimizer_fc.load_state_dict(checkpoint['optimizer_fc'])
-            print 'loaded checkpoint {}(epoch {})'.format(args.resume, checkpoint['epoch'])
+            print('loaded checkpoint {}(epoch {})'.format(args.resume, checkpoint['epoch']))
         else:
-            print 'no checkpoint found at {}'.format(args.resume)
+            print('no checkpoint found at {}'.format(args.resume))
 
 
     cudnn.benchmark = True
+
     # Data loading code
     train_dataset = BatchDataset(transform=transforms.Compose([
                                             transforms.Resize([512,512]),
@@ -110,14 +110,12 @@ def main():
     scheduler_fc = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fc, 100*len(train_loader))
 
     step = 0
-    print 'START TIME:', time.asctime(time.localtime(time.time()))
+    print('START TIME:', time.asctime(time.localtime(time.time())))
     for epoch in range(args.start_epoch, args.epochs):
         step = train(train_loader, model, criterion, optimizer_conv, scheduler_conv, optimizer_fc, scheduler_fc, epoch, step)
 
 
-
-
-def train(train_loader, model, criterion, optimizer_conv,scheduler_conv, optimizer_fc, scheduler_fc, epoch, step):
+def train(train_loader, model, criterion, optimizer_conv, scheduler_conv, optimizer_fc, scheduler_fc, epoch, step):
     global best_prec1
 
     batch_time = AverageMeter()
@@ -188,7 +186,6 @@ def train(train_loader, model, criterion, optimizer_conv,scheduler_conv, optimiz
         scheduler_conv.step()
         scheduler_fc.step()
 
-
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -235,10 +232,6 @@ def train(train_loader, model, criterion, optimizer_conv,scheduler_conv, optimiz
     return step
 
 
-
-
-
-
 def validate(val_loader, model, criterion):
     batch_time = AverageMeter()
     softmax_losses = AverageMeter()
@@ -270,8 +263,6 @@ def validate(val_loader, model, criterion):
             batch_time.update(time.time() - end)
             end = time.time()
 
-
-
             if i % args.print_freq == 0:
                 print('Time: {time}\nTest: [{0}/{1}]\t'
                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
@@ -283,8 +274,6 @@ def validate(val_loader, model, criterion):
         print(' * Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'.format(top1=top1, top5=top5))
 
     return top1.avg
-
-
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ from torch.utils.data.sampler import BatchSampler
 from PIL import  Image
 import numpy as np
 
+
 def default_loader(path):
     try:
         img = Image.open(path).convert('RGB')
@@ -13,12 +14,13 @@ def default_loader(path):
         return Image.new('RGB', (224,224), 'white')
     return img
 
+
 class RandomDataset(Dataset):
     def __init__(self, transform=None, dataloader=default_loader):
         self.transform = transform
         self.dataloader = dataloader
 
-        with open('/home/pqzhuang/data/CUB/CUB_200_2011/val.txt', 'r') as fid:
+        with open('D:\\dataset\\axles_cnt_v4_unknown_c\\data\\val.txt', 'r') as fid:
             self.imglist = fid.readlines()
 
     def __getitem__(self, index):
@@ -31,16 +33,16 @@ class RandomDataset(Dataset):
 
         return [img, label]
 
-
     def __len__(self):
         return len(self.imglist)
+
 
 class BatchDataset(Dataset):
     def __init__(self, transform=None, dataloader=default_loader):
         self.transform = transform
         self.dataloader = dataloader
 
-        with open('/home/pqzhuang/data/CUB/CUB_200_2011/train.txt', 'r') as fid:
+        with open('D:\\dataset\\axles_cnt_v4_unknown_c\\data\\train.txt', 'r') as fid:
             self.imglist = fid.readlines()
 
         self.labels = []
@@ -50,7 +52,6 @@ class BatchDataset(Dataset):
         self.labels = np.array(self.labels)
         self.labels = torch.LongTensor(self.labels)
 
-
     def __getitem__(self, index):
         image_name, label = self.imglist[index].strip().split()
         image_path = image_name
@@ -61,9 +62,9 @@ class BatchDataset(Dataset):
 
         return [img, label]
 
-
     def __len__(self):
         return len(self.imglist)
+
 
 class BalancedBatchSampler(BatchSampler):
     def __init__(self, dataset, n_classes, n_samples):
