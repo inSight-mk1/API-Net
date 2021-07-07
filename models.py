@@ -13,12 +13,13 @@ def pdist(vectors):
         dim=1).view(-1, 1)
     return distance_matrix
 
+
 class API_Net(nn.Module):
     def __init__(self):
         super(API_Net, self).__init__()
 
-        resnet101 = models.resnet101(pretrained=True)
-        layers = list(resnet101.children())[:-2]
+        resnet152 = models.resnet152(pretrained=True)
+        layers = list(resnet152.children())[:-2]
 
         self.conv = nn.Sequential(*layers)
         self.avg = nn.AvgPool2d(kernel_size=14, stride=1)
@@ -27,7 +28,6 @@ class API_Net(nn.Module):
         self.fc = nn.Linear(2048, 200)
         self.drop = nn.Dropout(p=0.5)
         self.sigmoid = nn.Sigmoid()
-
 
     def forward(self, images, targets=None, flag='train'):
         conv_out = self.conv(images)
@@ -42,12 +42,10 @@ class API_Net(nn.Module):
             labels1 = torch.cat([intra_labels[:, 0], inter_labels[:, 0]], dim=0)
             labels2 = torch.cat([intra_labels[:, 1], inter_labels[:, 1]], dim=0)
 
-
             mutual_features = torch.cat([features1, features2], dim=1)
             map1_out = self.map1(mutual_features)
             map2_out = self.drop(map1_out)
             map2_out = self.map2(map2_out)
-
 
             gate1 = torch.mul(map2_out, features1)
             gate1 = self.sigmoid(gate1)
@@ -70,7 +68,6 @@ class API_Net(nn.Module):
 
         elif flag == 'val':
             return self.fc(pool_out)
-
 
     def get_pairs(self, embeddings, labels):
         distance_matrix = pdist(embeddings).detach().cpu().numpy()
@@ -110,22 +107,3 @@ class API_Net(nn.Module):
         inter_pairs = torch.from_numpy(inter_pairs).long().to(device)
 
         return intra_pairs, inter_pairs, intra_labels, inter_labels
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
